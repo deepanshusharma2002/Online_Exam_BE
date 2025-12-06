@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 
 exports.studentSignup = async (req, res) => {
     try {
-        const { name, email, mobile, age, gender, caste, password } = req.body;
+        const { name, email, mobile, age, gender, password } = req.body;
 
         if (!name || !email || !password || !mobile || !age || !gender) {
             return res.status(400).json({
@@ -36,7 +36,6 @@ exports.studentSignup = async (req, res) => {
                     mobile,
                     age: parseInt(age),
                     gender,
-                    caste,
                     password: hashedPassword,
                     status: 0
                 },

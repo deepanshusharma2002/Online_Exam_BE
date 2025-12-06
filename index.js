@@ -5,7 +5,6 @@ const naukariRoutes = require('./Routes/naukariRoutes');
 const sectionRoutes = require('./Routes/sectionRoutes');
 const homeLinksRoutes = require('./Routes/homeLinksRoutes');
 const governmentJobsRoutes = require('./Routes/governmentJobsRoutes');
-const homeTextRoutes = require('./Routes/homeTextRoutes');
 const app = express();
 const path = require("path");
 const { PrismaClient } = require('@prisma/client');
@@ -40,7 +39,6 @@ app.use('/api/naukari', naukariRoutes);
 app.use('/api/section', sectionRoutes);
 app.use('/api/home/links', homeLinksRoutes);
 app.use('/api/government/jobs', governmentJobsRoutes);
-app.use('/api/home/text', homeTextRoutes);
 
 app.post("/api/contact", async (req, res) => {
     try {

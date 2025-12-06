@@ -171,7 +171,7 @@ model Student {
   mobile      String
   age         Int
   gender      Gender
-  caste       String?
+  class       String?
   is_verified Boolean      @default(false)
   status      Int
   created_at  DateTime     @default(now())

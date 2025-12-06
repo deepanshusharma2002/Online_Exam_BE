@@ -3,7 +3,6 @@ const cors = require('cors');
 const userRoutes = require('./Routes/userRoutes');
 const naukariRoutes = require('./Routes/naukariRoutes');
 const sectionRoutes = require('./Routes/sectionRoutes');
-const homeLinksRoutes = require('./Routes/homeLinksRoutes');
 const governmentJobsRoutes = require('./Routes/governmentJobsRoutes');
 const app = express();
 const path = require("path");
@@ -37,7 +36,6 @@ app.use("/api/student/question-answer", studentQuesAnsRoutes);
 app.use("/api/user", userRoutes);
 app.use('/api/naukari', naukariRoutes);
 app.use('/api/section', sectionRoutes);
-app.use('/api/home/links', homeLinksRoutes);
 app.use('/api/government/jobs', governmentJobsRoutes);
 
 app.post("/api/contact", async (req, res) => {

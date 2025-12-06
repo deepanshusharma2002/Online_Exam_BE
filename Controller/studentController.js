@@ -443,7 +443,7 @@ exports.getAllStudents = async (req, res) => {
             status,
             is_verified,
             gender,
-            caste,
+            class: studentClass,
             search,
         } = req.query;
 
@@ -454,7 +454,7 @@ exports.getAllStudents = async (req, res) => {
         if (is_verified !== undefined)
             where.is_verified = is_verified === "true";
         if (gender) where.gender = gender;
-        if (caste) where.caste = caste;
+        if (studentClass) where.class = studentClass;
 
         if (search) {
             where.OR = [
@@ -478,7 +478,7 @@ exports.getAllStudents = async (req, res) => {
                     mobile: true,
                     age: true,
                     gender: true,
-                    caste: true,
+                    class: true,
                     is_verified: true,
                     status: true,
                     created_at: true,
@@ -487,14 +487,11 @@ exports.getAllStudents = async (req, res) => {
             prisma.student.count({ where }),
         ]);
 
-        const exam_scheduled = await prisma.exam_schedule.findFirst();
-
         const totalPages = Math.ceil(totalCount / limit);
 
         return res.status(200).json({
             success: true,
             data: students,
-            exam_scheduled: exam_scheduled,
             pagination: {
                 totalItems: totalCount,
                 totalPages,
@@ -574,6 +571,59 @@ exports.updateExamSchedule = async (req, res) => {
                 end_time,
                 total_q: Number(total_q),
                 exam_time_min: Number(exam_time_min),
+                status: Number(status),
+            },
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Exam schedule updated successfully",
+            data: updated,
+        });
+    } catch (error) {
+        console.error("Update Exam Schedule Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to update exam schedule",
+            error: error.message,
+        });
+    }
+};
+
+exports.updateStudent = async (req, res) => {
+    try {
+        const student_id = Number(req.params.student_id);
+
+        const {
+            class: studentClass,
+            status,
+        } = req.body;
+
+        // ✅ Validation
+        if (!student_id) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid exam schedule ID",
+            });
+        }
+
+        // ✅ Check if record exists
+        const existing = await prisma.student.findUnique({
+            where: { student_id },
+        });
+
+        if (!existing) {
+            return res.status(404).json({
+                success: false,
+                message: "Student not found",
+            });
+        }
+
+        // ✅ Update
+        const updated = await prisma.student.update({
+            where: { student_id },
+            data: {
+                class: studentClass,
                 status: Number(status),
             },
         });

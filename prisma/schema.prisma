@@ -106,20 +106,6 @@ model Section {
   @@map("section_master")
 }
 
-model HomeLinks {
-  home_links_id Int      @id @default(autoincrement())
-  display_name  String
-  url           String
-  status        Int      @default(1)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  created_by    Int?
-  updated_by    Int?
-  type          String?
-
-  @@map("home_links")
-}
-
 model GovernmentLinks {
   government_links_id Int      @id @default(autoincrement())
   title               String

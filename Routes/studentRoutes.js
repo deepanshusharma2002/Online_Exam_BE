@@ -9,7 +9,8 @@ const {
   getStudentExamResult,
   getExamBreakup,
   getAllStudents,
-  updateExamSchedule 
+  updateExamSchedule,
+  updateStudent
 } = require("../Controller/studentController");
 const verifyAgent = require("../Middleware/verifyAgent");
 const verifyUser = require("../Middleware/authMiddleware");
@@ -24,6 +25,7 @@ router.get("/exam/result", verifyAgent, getStudentExamResult);
 router.get("/exam/breakup/:exam_id", verifyAgent, getExamBreakup);
 
 router.get("/", verifyUser, getAllStudents);
+router.put("/:student_id", verifyUser, updateStudent);
 router.put("/exam-schedule/:exam_schedule_id", verifyUser, updateExamSchedule);
 
 module.exports = router;

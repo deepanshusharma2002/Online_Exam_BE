@@ -1,0 +1,251 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  name       String
+  email      String   @unique
+  role       String
+  password   String
+  status     Int      @default(1)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  created_by Int?
+  updated_by Int?
+}
+
+model Naukari {
+  naukari_id         Int                 @id @default(autoincrement())
+  title              String
+  isResult           Boolean             @default(false)
+  isAdmitCard        Boolean             @default(false)
+  postDate           DateTime
+  description        String
+  seo_title          String
+  seo_keywords       String
+  seo_published_date DateTime
+  seo_description    String
+  status             Int                 @default(1)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  created_by         Int?
+  updated_by         Int?
+  seo_category       String
+  seo_section        String
+  seo_sub_section    String?
+  slug               String              @unique
+  priority           Int?
+  discoverMoreLinks  DiscoverMore[]
+  importantQuesAns   ImportantQuesAns[]
+  usefulLinks        UsefulLinkSection[]
+
+  @@map("naukari")
+}
+
+model ImportantQuesAns {
+  id         Int     @id @default(autoincrement())
+  question   String
+  answer     String
+  naukari_id Int
+  naukari    Naukari @relation(fields: [naukari_id], references: [naukari_id], onDelete: Cascade)
+
+  @@map("important_ques_ans")
+}
+
+model UsefulLinkSection {
+  id         Int          @id @default(autoincrement())
+  text       String
+  naukari_id Int
+  naukari    Naukari      @relation(fields: [naukari_id], references: [naukari_id], onDelete: Cascade)
+  links      UsefulLink[]
+
+  @@map("useful_link_sections")
+}
+
+model UsefulLink {
+  id           Int               @id @default(autoincrement())
+  display_name String
+  url          String
+  section_id   Int
+  section      UsefulLinkSection @relation(fields: [section_id], references: [id], onDelete: Cascade)
+
+  @@map("useful_links")
+}
+
+model DiscoverMore {
+  id           Int     @id @default(autoincrement())
+  display_name String
+  url          String
+  naukari_id   Int
+  naukari      Naukari @relation(fields: [naukari_id], references: [naukari_id], onDelete: Cascade)
+
+  @@map("discover_more_links")
+}
+
+model Section {
+  section_id         Int       @id @default(autoincrement())
+  display_name       String
+  img_url            String
+  url                String
+  status             Int       @default(1)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  created_by         Int?
+  updated_by         Int?
+  seo_description    String?
+  seo_keywords       String?
+  seo_published_date DateTime?
+  seo_title          String?
+
+  @@map("section_master")
+}
+
+model HomeLinks {
+  home_links_id Int      @id @default(autoincrement())
+  display_name  String
+  url           String
+  status        Int      @default(1)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  created_by    Int?
+  updated_by    Int?
+  type          String?
+
+  @@map("home_links")
+}
+
+model GovernmentLinks {
+  government_links_id Int      @id @default(autoincrement())
+  title               String
+  department          String
+  location            String
+  posts               Int
+  last_date           DateTime
+  status              Int      @default(1)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  created_by          Int?
+  updated_by          Int?
+  url                 String
+
+  @@map("government_links")
+}
+
+model homeText {
+  home_text_id       Int      @id @default(autoincrement())
+  heading1           String
+  heading2           String
+  seo_title          String
+  seo_keywords       String
+  seo_published_date DateTime
+  seo_description    String
+  status             Int      @default(1)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  created_by         Int?
+  updated_by         Int?
+
+  @@map("home_text")
+}
+
+model ContactUs {
+  contact_us_id Int    @id @default(autoincrement())
+  name          String
+  subject       String
+  email         String
+  message       String
+
+  @@map("contact_us")
+}
+
+model Student {
+  student_id  Int          @id @default(autoincrement())
+  name        String
+  email       String       @unique
+  mobile      String
+  age         Int
+  gender      Gender
+  caste       String?
+  is_verified Boolean      @default(false)
+  status      Int
+  created_at  DateTime     @default(now())
+  updated_at  DateTime     @updatedAt
+  password    String
+  otps        StudentOTP[]
+}
+
+model StudentOTP {
+  otp_id     Int      @id @default(autoincrement())
+  student_id Int
+  otp_code   String
+  expires_at DateTime
+  is_used    Boolean  @default(false)
+  created_at DateTime @default(now())
+  student    Student  @relation(fields: [student_id], references: [student_id])
+}
+
+model student_ques_ans {
+  student_ques_ans_id Int      @id @default(autoincrement())
+  question            String
+  option_a            String
+  option_b            String
+  option_c            String
+  option_d            String
+  ans_option          String
+  status              Int      @default(1)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  created_by          Int?
+  updated_by          Int?
+  
+  examAnswers student_exam_answers[]
+}
+
+model student_exam {
+  exam_id    Int       @id @default(autoincrement())
+  student_id Int
+  total_q    Int
+  start_time DateTime  @default(now())
+  end_time   DateTime?
+  fatal       Int?
+  status     Int       @default(1)
+  score      Int?
+}
+
+model student_exam_answers {
+  id          Int      @id @default(autoincrement())
+  exam_id     Int
+  question_id Int
+  selected    String?
+  is_correct  Boolean?
+
+  question student_ques_ans   @relation(fields: [question_id], references: [student_ques_ans_id])
+}
+
+  model exam_schedule {
+    exam_schedule_id Int      @id @default(autoincrement())
+
+    exam_name        String
+
+    start_date       DateTime
+    start_time       String
+    end_date         DateTime
+    end_time         String
+    total_q          Int?
+    exam_time_min    Int?
+
+    status           Int      @default(1)
+  }
+
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}

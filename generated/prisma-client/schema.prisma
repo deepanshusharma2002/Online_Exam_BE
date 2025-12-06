@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  name       String
+  email      String   @unique
+  role       String
+  password   String
+  status     Int      @default(1)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  created_by Int?
+  updated_by Int?
+}
+
+model Naukari {
+  naukari_id  Int      @id @default(autoincrement())
+  title       String
+  isResult    Boolean  @default(false)
+  isAdmitCard Boolean  @default(false)
+  postDate    DateTime
+  description String
+  slug        String   @unique
+
+  // SEO Fields
+  seo_title          String
+  seo_keywords       String
+  seo_published_date DateTime
+  seo_description    String
+  seo_section        String
+  seo_sub_section    String?
+  seo_category       String
+
+  // Relations
+  importantQuesAns  ImportantQuesAns[]
+  usefulLinks       UsefulLinkSection[]
+  discoverMoreLinks DiscoverMore[]
+
+  status     Int      @default(1)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  created_by Int?
+  updated_by Int?
+
+  @@map("naukari")
+}
+
+model ImportantQuesAns {
+  id         Int     @id @default(autoincrement())
+  question   String
+  answer     String
+  naukari_id Int
+  naukari    Naukari @relation(fields: [naukari_id], references: [naukari_id], onDelete: Cascade)
+
+  @@map("important_ques_ans")
+}
+
+model UsefulLinkSection {
+  id         Int          @id @default(autoincrement())
+  text       String // Section text
+  naukari_id Int
+  naukari    Naukari      @relation(fields: [naukari_id], references: [naukari_id], onDelete: Cascade)
+  links      UsefulLink[]
+
+  @@map("useful_link_sections")
+}
+
+model UsefulLink {
+  id           Int               @id @default(autoincrement())
+  display_name String
+  url          String
+  section_id   Int
+  section      UsefulLinkSection @relation(fields: [section_id], references: [id], onDelete: Cascade)
+
+  @@map("useful_links")
+}
+
+model DiscoverMore {
+  id           Int     @id @default(autoincrement())
+  display_name String
+  url          String
+  naukari_id   Int
+  naukari      Naukari @relation(fields: [naukari_id], references: [naukari_id], onDelete: Cascade)
+
+  @@map("discover_more_links")
+}
+
+model Section {
+  section_id   Int    @id @default(autoincrement())
+  display_name String
+  img_url      String
+  url          String
+
+  status     Int      @default(1)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  created_by Int?
+  updated_by Int?
+
+  @@map("section_master")
+}

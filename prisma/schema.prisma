@@ -23,27 +23,16 @@ model User {
 model Naukari {
   naukari_id         Int                 @id @default(autoincrement())
   title              String
-  isResult           Boolean             @default(false)
-  isAdmitCard        Boolean             @default(false)
-  postDate           DateTime
+  subject            String
+  class              Int
   description        String
-  seo_title          String
-  seo_keywords       String
-  seo_published_date DateTime
-  seo_description    String
   status             Int                 @default(1)
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   created_by         Int?
   updated_by         Int?
-  seo_category       String
-  seo_section        String
-  seo_sub_section    String?
-  slug               String              @unique
-  priority           Int?
-  discoverMoreLinks  DiscoverMore[]
+  slug               String
   importantQuesAns   ImportantQuesAns[]
-  usefulLinks        UsefulLinkSection[]
 
   @@map("naukari")
 }
@@ -56,36 +45,6 @@ model ImportantQuesAns {
   naukari    Naukari @relation(fields: [naukari_id], references: [naukari_id], onDelete: Cascade)
 
   @@map("important_ques_ans")
-}
-
-model UsefulLinkSection {
-  id         Int          @id @default(autoincrement())
-  text       String
-  naukari_id Int
-  naukari    Naukari      @relation(fields: [naukari_id], references: [naukari_id], onDelete: Cascade)
-  links      UsefulLink[]
-
-  @@map("useful_link_sections")
-}
-
-model UsefulLink {
-  id           Int               @id @default(autoincrement())
-  display_name String
-  url          String
-  section_id   Int
-  section      UsefulLinkSection @relation(fields: [section_id], references: [id], onDelete: Cascade)
-
-  @@map("useful_links")
-}
-
-model DiscoverMore {
-  id           Int     @id @default(autoincrement())
-  display_name String
-  url          String
-  naukari_id   Int
-  naukari      Naukari @relation(fields: [naukari_id], references: [naukari_id], onDelete: Cascade)
-
-  @@map("discover_more_links")
 }
 
 model Section {

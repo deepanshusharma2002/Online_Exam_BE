@@ -168,6 +168,7 @@ exports.studentLoginWithPassword = async (req, res) => {
                 student_id: student.student_id,
                 email: student.email,
                 role: "STUDENT",
+                class: student.class || null,
             },
             process.env.JWT_SECRET_student,
             { expiresIn: "30d" }
@@ -182,6 +183,7 @@ exports.studentLoginWithPassword = async (req, res) => {
                 name: student.name,
                 email: student.email,
                 role: "STUDENT",
+                class: student.class || null,
             },
         });
     } catch (error) {

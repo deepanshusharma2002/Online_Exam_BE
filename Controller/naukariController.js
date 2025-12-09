@@ -42,38 +42,124 @@ const createNaukari = async (req, res) => {
 };
 
 // 🟣 Get all Naukari
+// const getAllNaukari = async (req, res) => {
+//   try {
+//     const page = parseInt(req.query.page) || 1;
+//     const limit = parseInt(req.query.limit) || 10;
+
+//     const { naukari_id, slug, class: StudentClass, subject } = req.query;
+
+//     let filter = {
+//       status: {
+//         not: 0,
+//       },
+//     };
+
+//     let orderBy = [{ createdAt: "desc" }];
+
+//     if (naukari_id) filter.naukari_id = Number(naukari_id);
+//     if (slug) {
+//       filter.slug = slug?.split("~")[0];
+//       filter.naukari_id = Number(slug?.split("~")[1]);
+//     };
+//     if(StudentClass && subject){
+//       filter.class = Number(StudentClass);
+//       filter.subject = subject;
+//     }
+//     if(StudentClass && !subject){
+//       filter.class = Number(StudentClass);
+//     }
+//     if(!StudentClass && subject){
+//       filter.subject = subject;
+//     }
+
+//     // Calculate skip value
+//     const skip = (page - 1) * limit;
+
+//     const [naukaries, totalCount] = await Promise.all([
+//       prisma.naukari.findMany({
+//         skip,
+//         take: limit,
+//         orderBy,
+//         where: filter,
+//         include: naukari_id || slug ? {
+//           importantQuesAns: true,
+//         } : {},
+
+//       }),
+//       prisma.naukari.count({
+//         where: filter,
+//       }),
+//     ]);
+
+//     // Calculate total pages
+//     const totalPages = Math.ceil(totalCount / limit);
+
+//     return res.status(200).json({
+//       success: true,
+//       data: naukaries,
+//       pagination: {
+//         totalItems: totalCount,
+//         totalPages,
+//         currentPage: page,
+//         pageSize: limit,
+//         hasNextPage: page < totalPages,
+//         hasPrevPage: page > 1,
+//       },
+//     });
+
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Failed to fetch naukaries",
+//       error: error.message,
+//     });
+//   }
+// };
 const getAllNaukari = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
 
-    const { naukari_id, slug, class: StudentClass, subject } = req.query;
+    const {
+      naukari_id,
+      slug,
+      class: StudentClass,
+      subject
+    } = req.query;
 
     let filter = {
-      status: {
-        not: 0,
-      },
+      status: { not: 0 },
     };
 
-    let orderBy = [{ createdAt: "desc" }];
+    const orderBy = [{ createdAt: "desc" }];
 
-    if (naukari_id) filter.naukari_id = Number(naukari_id);
+    // Search by ID
+    if (naukari_id) {
+      filter.naukari_id = Number(naukari_id);
+    }
+
+    // Search by slug~id
     if (slug) {
-      filter.slug = slug?.split("~")[0];
-      filter.naukari_id = Number(slug?.split("~")[1]);
-    };
-    if(StudentClass && subject){
-      filter.class = Number(StudentClass);
-      filter.subject = subject;
-    }
-    if(StudentClass && !subject){
-      filter.class = Number(StudentClass);
-    }
-    if(!StudentClass && subject){
-      filter.subject = subject;
+      const [slugValue, id] = slug.split("~");
+      filter.slug = slugValue;
+      filter.naukari_id = Number(id);
     }
 
-    // Calculate skip value
+    // ✅ Search by class
+    if (StudentClass) {
+      filter.class = Number(StudentClass);
+    }
+
+    // ✅ Search by subject (case-insensitive)
+    if (subject) {
+      filter.subject = {
+        equals: subject,
+        mode: "insensitive",
+      };
+    }
+
     const skip = (page - 1) * limit;
 
     const [naukaries, totalCount] = await Promise.all([
@@ -82,17 +168,13 @@ const getAllNaukari = async (req, res) => {
         take: limit,
         orderBy,
         where: filter,
-        include: naukari_id || slug ? {
-          importantQuesAns: true,
-        } : {},
-
+        include: naukari_id || slug
+          ? { importantQuesAns: true }
+          : {},
       }),
-      prisma.naukari.count({
-        where: filter,
-      }),
+      prisma.naukari.count({ where: filter }),
     ]);
 
-    // Calculate total pages
     const totalPages = Math.ceil(totalCount / limit);
 
     return res.status(200).json({
@@ -107,7 +189,6 @@ const getAllNaukari = async (req, res) => {
         hasPrevPage: page > 1,
       },
     });
-
   } catch (error) {
     console.error(error);
     return res.status(500).json({
@@ -117,7 +198,6 @@ const getAllNaukari = async (req, res) => {
     });
   }
 };
-
 
 // 🟡 Get Naukari by ID
 const getNaukariById = async (req, res) => {

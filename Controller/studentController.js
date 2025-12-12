@@ -147,7 +147,7 @@ exports.studentLoginWithPassword = async (req, res) => {
             });
         }
 
-        if (!student.is_verified) {
+        if (!student.is_verified || student.status !== 1) {
             return res.status(403).json({
                 success: false,
                 message: "Please verify your email first",
@@ -447,6 +447,7 @@ exports.getAllStudents = async (req, res) => {
             gender,
             class: studentClass,
             search,
+            isAuthorized
         } = req.query;
 
         // ✅ Build filter dynamically
@@ -457,6 +458,12 @@ exports.getAllStudents = async (req, res) => {
             where.is_verified = is_verified === "true";
         if (gender) where.gender = gender;
         if (studentClass) where.class = studentClass;
+        if (isAuthorized === "true") {
+            where.class = { not: null };
+        }
+        if (isAuthorized === "false") {
+            where.class = null;
+        }
 
         if (search) {
             where.OR = [
@@ -625,7 +632,7 @@ exports.updateStudent = async (req, res) => {
         const updated = await prisma.student.update({
             where: { student_id },
             data: {
-                class: studentClass,
+                class: studentClass ? studentClass : null,
                 status: Number(status),
             },
         });
@@ -640,6 +647,60 @@ exports.updateStudent = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Failed to update exam schedule",
+            error: error.message,
+        });
+    }
+};
+
+exports.validateStudent = async (req, res) => {
+    const { class: StudentClass } = req.query;
+
+    let stuClass = StudentClass || null;
+    try {
+        const authHeader = req.headers.authorization;
+
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ success: false, message: 'Authorization token missing' });
+        }
+
+        const token = authHeader.split(' ')[1];
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET_student);
+        if (!decoded) {
+            return res.status(401).json({ success: false, message: 'Invalid token' });
+        }
+        const student = await prisma.student.findUnique({
+            where: { student_id: decoded.student_id },
+        });
+
+        if (!student) {
+            return res.status(404).json({ success: false, message: 'student not found' });
+        }
+
+        if (student?.status !== 1 || student?.class !== stuClass) {
+            return res.status(403).json({
+                success: false,
+                message: "Student is not active",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Student is valid",
+            student: {
+                student_id: student.student_id,
+                name: student.name,
+                email: student.email,
+                role: "STUDENT",
+                class: student.class || null,
+            },
+        });
+
+    } catch (error) {
+        console.error("Update Exam Schedule Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Student is not active",
             error: error.message,
         });
     }

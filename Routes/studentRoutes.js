@@ -11,7 +11,8 @@ const {
   getAllStudents,
   updateExamSchedule,
   updateStudent,
-  validateStudent
+  validateStudent,
+  createExamSchedule
 } = require("../Controller/studentController");
 const verifyAgent = require("../Middleware/verifyAgent");
 const verifyUser = require("../Middleware/authMiddleware");
@@ -29,5 +30,6 @@ router.get("/", verifyUser, getAllStudents);
 router.get("/validate", validateStudent);
 router.put("/:student_id", verifyUser, updateStudent);
 router.put("/exam-schedule/:exam_schedule_id", verifyUser, updateExamSchedule);
+router.post("/exam-schedule", verifyUser, createExamSchedule);
 
 module.exports = router;

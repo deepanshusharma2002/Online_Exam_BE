@@ -533,6 +533,8 @@ exports.updateExamSchedule = async (req, res) => {
             end_time,
             total_q,
             exam_time_min,
+            class: studentClass,
+            subject,
             status,
         } = req.body;
 
@@ -549,7 +551,11 @@ exports.updateExamSchedule = async (req, res) => {
             !start_date ||
             !start_time ||
             !end_date ||
-            !end_time
+            !end_time ||
+            !studentClass ||
+            !subject ||
+            !total_q ||
+            !exam_time_min
         ) {
             return res.status(400).json({
                 success: false,
@@ -580,6 +586,8 @@ exports.updateExamSchedule = async (req, res) => {
                 end_time,
                 total_q: Number(total_q),
                 exam_time_min: Number(exam_time_min),
+                studentClass: studentClass ? studentClass : null,
+                subject: subject ? subject : null,
                 status: Number(status),
             },
         });
@@ -598,6 +606,69 @@ exports.updateExamSchedule = async (req, res) => {
         });
     }
 };
+
+exports.createExamSchedule = async (req, res) => {
+    try {
+        const {
+            exam_name,
+            start_date,
+            start_time,
+            end_date,
+            end_time,
+            total_q,
+            exam_time_min,
+            class: studentClass,
+            subject,
+            status,
+        } = req.body;
+
+        if (
+            !exam_name ||
+            !start_date ||
+            !start_time ||
+            !end_date ||
+            !end_time ||
+            !studentClass ||
+            !subject ||
+            !total_q ||
+            !exam_time_min
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "All fields are required",
+            });
+        }
+
+        // ✅ Create
+        const created = await prisma.exam_schedule.create({
+            data: {
+                exam_schedule_id,
+                exam_name,
+                start_time,
+                end_date,
+                end_time,
+                total_q,
+                exam_time_min,
+                class: studentClass,
+                subject,
+                status,
+            },
+        });
+
+        return res.status(201).json({
+            success: true,
+            message: "Exam schedule created successfully",
+            data: created,
+        });
+    } catch (error) {
+        console.error("Create Exam Schedule Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to create exam schedule",
+            error: error.message,
+        });
+    }
+}
 
 exports.updateStudent = async (req, res) => {
     try {

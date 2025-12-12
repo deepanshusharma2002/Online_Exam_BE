@@ -183,7 +183,9 @@ model student_exam_answers {
     end_date         DateTime
     end_time         String
     total_q          Int?
-    exam_time_min    Int?
+    exam_time_min    Int
+    class            Int
+    subject          String
 
     status           Int      @default(1)
   }

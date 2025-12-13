@@ -520,6 +520,194 @@ exports.getAllStudents = async (req, res) => {
     }
 };
 
+exports.getAllExamSchedules = async (req, res) => {
+    try {
+        // ✅ Pagination params
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+
+        // ✅ Optional filters
+        const {
+            status,
+            exam_schedule_id,
+            class: studentClass,
+            subject
+        } = req.query;
+
+        // ✅ Build filter dynamically
+        const where = {};
+
+        if (status) {
+            where.status = Number(status);
+        } else {
+            where.status = { not: 0 };
+        }
+        if (exam_schedule_id) {
+            where.exam_schedule_id = Number(exam_schedule_id);
+        }
+        if (studentClass) where.class = Number(studentClass);
+        if (subject) where.subject = subject;
+
+        // ✅ Fetch data + count in parallel
+        const [students, totalCount] = await Promise.all([
+            prisma.exam_schedule.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy: { exam_schedule_id: "desc" },
+            }),
+            prisma.exam_schedule.count({ where }),
+        ]);
+
+        const totalPages = Math.ceil(totalCount / limit);
+
+        return res.status(200).json({
+            success: true,
+            data: students,
+            pagination: {
+                totalItems: totalCount,
+                totalPages,
+                currentPage: page,
+                pageSize: limit,
+                hasNextPage: page < totalPages,
+                hasPrevPage: page > 1,
+            },
+        });
+    } catch (error) {
+        console.error("Get Exam Schedule Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch students",
+            error: error.message,
+        });
+    }
+}
+
+exports.getStudentExamSchedules = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+
+        const { tab = "all" } = req.query;
+
+        const studentClass = req.student.class;
+
+        if (!studentClass) {
+            return res.status(403).json({
+                success: false,
+                message: "Student is not authorized. Class not assigned.",
+            });
+        }
+
+        const now = new Date();
+
+        let where = {
+            status: 1,
+            class: Number(studentClass),
+        };
+
+        const exams = await prisma.exam_schedule.findMany({
+            where,
+            orderBy: { start_date: "asc" },
+        });
+
+        const buildDateTime = (date, time) => {
+            return new Date(
+                `${date.toISOString().split("T")[0]}T${time}:00`
+            );
+        };
+
+        const filteredExams = exams.filter((exam) => {
+            const startDateTime = buildDateTime(exam.start_date, exam.start_time);
+            const endDateTime = buildDateTime(exam.end_date, exam.end_time);
+
+            if (tab === "ongoing") {
+                return now >= startDateTime && now <= endDateTime;
+            }
+
+            if (tab === "upcoming") {
+                return now < startDateTime;
+            }
+
+            return true;
+        });
+
+        const totalCount = filteredExams.length;
+        const paginatedData = filteredExams.slice(skip, skip + limit);
+
+        const totalPages = Math.ceil(totalCount / limit);
+
+        return res.status(200).json({
+            success: true,
+            data: paginatedData,
+            pagination: {
+                totalItems: totalCount,
+                totalPages,
+                currentPage: page,
+                pageSize: limit,
+                hasNextPage: page < totalPages,
+                hasPrevPage: page > 1,
+            },
+        });
+    } catch (error) {
+        console.error("Student Exam Schedule Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch student exams",
+            error: error.message,
+        });
+    }
+};
+
+
+exports.deleteExamSchedule = async (req, res) => {
+    try {
+        const exam_schedule_id = Number(req.params.exam_schedule_id);
+
+        // ✅ Validation
+        if (!exam_schedule_id) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid exam schedule ID",
+            });
+        }
+
+        // ✅ Check if record exists
+        const existing = await prisma.exam_schedule.findUnique({
+            where: { exam_schedule_id },
+        });
+
+        if (!existing) {
+            return res.status(404).json({
+                success: false,
+                message: "Exam schedule not found",
+            });
+        }
+
+        // ✅ Delete
+        // await prisma.exam_schedule.delete({
+        //     where: { exam_schedule_id },
+        // });
+        await prisma.exam_schedule.update({
+            where: { exam_schedule_id },
+            data: { status: 0 },
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Exam schedule deleted successfully",
+        });
+    } catch (error) {
+        console.error("Delete Exam Schedule Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to delete exam schedule",
+            error: error.message,
+        });
+    }
+}
 
 exports.updateExamSchedule = async (req, res) => {
     try {
@@ -586,8 +774,8 @@ exports.updateExamSchedule = async (req, res) => {
                 end_time,
                 total_q: Number(total_q),
                 exam_time_min: Number(exam_time_min),
-                studentClass: studentClass ? studentClass : null,
-                subject: subject ? subject : null,
+                class: Number(studentClass),
+                subject,
                 status: Number(status),
             },
         });
@@ -642,14 +830,14 @@ exports.createExamSchedule = async (req, res) => {
         // ✅ Create
         const created = await prisma.exam_schedule.create({
             data: {
-                exam_schedule_id,
                 exam_name,
+                start_date: new Date(start_date),
                 start_time,
-                end_date,
+                end_date: new Date(end_date),
                 end_time,
-                total_q,
-                exam_time_min,
-                class: studentClass,
+                total_q: Number(total_q),
+                exam_time_min: Number(exam_time_min),
+                class: Number(studentClass),
                 subject,
                 status,
             },

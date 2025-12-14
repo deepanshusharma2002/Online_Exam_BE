@@ -122,7 +122,9 @@ model Student {
   created_at  DateTime     @default(now())
   updated_at  DateTime     @updatedAt
   password    String
+
   otps        StudentOTP[]
+  exams       student_exam[]
 }
 
 model StudentOTP {
@@ -148,6 +150,10 @@ model student_ques_ans {
   updatedAt           DateTime @updatedAt
   created_by          Int?
   updated_by          Int?
+
+  exam_schedule_id    Int
+
+  exam_schedule exam_schedule @relation(fields: [exam_schedule_id], references: [exam_schedule_id], onDelete: Cascade)
   
   examAnswers student_exam_answers[]
 }
@@ -159,8 +165,14 @@ model student_exam {
   start_time DateTime  @default(now())
   end_time   DateTime?
   fatal       Int?
+  exam_schedule_id   Int
   status     Int       @default(1)
   score      Int?
+
+  exam_schedule exam_schedule    @relation(fields: [exam_schedule_id], references: [exam_schedule_id], onDelete: Cascade)
+
+  student       Student       @relation(fields: [student_id], references: [student_id], onDelete: Cascade)
+
 }
 
 model student_exam_answers {
@@ -188,6 +200,9 @@ model student_exam_answers {
     subject          String
 
     status           Int      @default(1)
+    
+    questions student_ques_ans[]
+    studentExams student_exam[]
   }
 
 

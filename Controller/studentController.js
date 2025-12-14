@@ -221,10 +221,14 @@ const isExamLive = (exam) => {
 exports.getExamQuestions = async (req, res) => {
     try {
         const student_id = req.student.student_id;
+        const studentClass = req.student.class;
+        const { exam_schedule_id } = req.query;
 
         const exam_schedule = await prisma.exam_schedule.findFirst({
             where: {
                 status: 1,
+                exam_schedule_id: Number(exam_schedule_id),
+                class: Number(studentClass),
             },
             orderBy: { exam_schedule_id: "desc" }
         });
@@ -239,18 +243,26 @@ exports.getExamQuestions = async (req, res) => {
 
         const alreadyCompleted = await prisma.student_exam.findFirst({
             where: {
-                student_id,
+                student_id: Number(student_id),
             },
             orderBy: {
                 exam_id: "desc",
             },
         });
 
-        if (alreadyCompleted || !isExamLive(exam_schedule)) {
-            return res.status(403).json({
+        if (alreadyCompleted) {
+            return res.status(200).json({
                 success: false,
                 code: "EXAM_ALREADY_COMPLETED",
                 message: "Exam already completed",
+            });
+        }
+
+        if (!isExamLive(exam_schedule)) {
+            return res.status(200).json({
+                success: false,
+                code: "EXAM_NOT_LIVE",
+                message: "Exam is not live currently",
             });
         }
 
@@ -258,6 +270,7 @@ exports.getExamQuestions = async (req, res) => {
             data: {
                 student_id,
                 total_q: exam_schedule?.total_q,
+                exam_schedule_id: Number(exam_schedule_id),
                 status: 1
             }
         });
@@ -271,10 +284,8 @@ exports.getExamQuestions = async (req, res) => {
           option_c,
           option_d
         FROM student_ques_ans
-        WHERE status = 1
-        ORDER BY RANDOM()
-        LIMIT ${exam_schedule?.total_q}
-      `;
+        WHERE status = 1 and exam_schedule_id = ${Number(exam_schedule_id)}
+        LIMIT ${Number(exam_schedule?.total_q)}`;
 
         res.status(200).json({
             success: true,
@@ -337,62 +348,171 @@ exports.submitExam = async (req, res) => {
     }
 };
 
+exports.getStudentExamResultAdmin = async (req, res) => {
+    try {
+        const exam_schedule_id = Number(req.query.exam_schedule_id);
+        const search = req.query.search || "";
+
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+
+        const where = {
+            exam_schedule_id,
+            ...(search && {
+                student: {
+                    name: {
+                        contains: search,
+                        mode: "insensitive",
+                    },
+                },
+            }),
+        };
+
+        const [exams, totalCount] = await Promise.all([
+            prisma.student_exam.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy: { score: "desc" },
+                include: {
+                    student: {
+                        select: {
+                            student_id: true,
+                            name: true,
+                        },
+                    },
+                },
+            }),
+            prisma.student_exam.count({ where }),
+        ]);
+
+        const totalPages = Math.ceil(totalCount / limit);
+
+        res.json({
+            success: true,
+            data: exams,
+            pagination: {
+                totalItems: totalCount,
+                totalPages,
+                currentPage: page,
+                pageSize: limit,
+                hasNextPage: page < totalPages,
+                hasPrevPage: page > 1,
+            },
+        });
+    } catch (err) {
+        console.error("Admin Result Error:", err);
+        res.status(500).json({ success: false });
+    }
+};
+// exports.getStudentExamResultAdmin = async (req, res) => {
+//     try {
+//         const exam_schedule_id = Number(req.query.exam_schedule_id);
+
+//         // Pagination
+//         const page = parseInt(req.query.page) || 1;
+//         const limit = parseInt(req.query.limit) || 10;
+//         const skip = (page - 1) * limit;
+
+//         // Fetch exams + count
+//         const [exams, totalCount] = await Promise.all([
+//             prisma.student_exam.findMany({
+//                 where: {
+//                     exam_schedule_id,
+//                 },
+//                 skip,
+//                 take: limit,
+//                 orderBy: {
+//                     score: "desc",
+//                 },
+//             }),
+
+//             prisma.student_exam.count({
+//                 where: {
+//                     exam_schedule_id,
+//                 },
+//             }),
+//         ]);
+
+//         const totalPages = Math.ceil(totalCount / limit);
+
+//         return res.status(200).json({
+//             success: true,
+//             hasExam: totalCount > 0,
+//             data: exams,
+//             pagination: {
+//                 totalItems: totalCount,
+//                 totalPages,
+//                 currentPage: page,
+//                 pageSize: limit,
+//                 hasNextPage: page < totalPages,
+//                 hasPrevPage: page > 1,
+//             },
+//         });
+
+//     } catch (err) {
+//         console.error("Result Fetch Error:", err);
+//         res.status(500).json({ success: false, hasLiveExam: false, hasExam: false });
+//     }
+// };
+
 exports.getStudentExamResult = async (req, res) => {
     try {
         const student_id = req.student.student_id;
 
-        const latestExam = await prisma.student_exam.findFirst({
-            where: {
-                student_id,
-            },
-            orderBy: {
-                exam_id: "desc",
-            },
-        });
+        // Pagination
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
 
-        if (!latestExam) {
-
-            const exam_schedule = await prisma.exam_schedule.findFirst({
+        // Fetch exams + count
+        const [exams, totalCount] = await Promise.all([
+            prisma.student_exam.findMany({
                 where: {
-                    status: 1,
+                    student_id,
                 },
-                orderBy: { exam_schedule_id: "desc" }
-            });
+                skip,
+                take: limit,
+                orderBy: {
+                    exam_id: "desc",
+                },
+                include: {
+                    exam_schedule: {
+                        select: {
+                            exam_schedule_id: true,
+                            exam_name: true,
+                            class: true,
+                            subject: true,
+                            start_date: true,
+                            start_time: true,
+                            end_date: true,
+                            end_time: true,
+                        },
+                    },
+                },
+            }),
 
-            if (!exam_schedule) {
-                return res.json({
-                    success: false,
-                    message: "No active exam scheduled",
-                    hasLiveExam: false,
-                    hasExam: false,
-                });
-            }
+            prisma.student_exam.count({
+                where: {
+                    student_id,
+                },
+            }),
+        ]);
 
-            if (isExamLive(exam_schedule)) {
-                return res.json({
-                    success: true,
-                    hasExam: false,
-                    hasLiveExam: true,
-                    result: exam_schedule,
-                });
-            }
+        const totalPages = Math.ceil(totalCount / limit);
 
-            return res.json({
-                success: true,
-                hasExam: false,
-            });
-        }
-
-        res.json({
+        return res.status(200).json({
             success: true,
-            hasExam: true,
-            hasLiveExam: false,
-            result: {
-                exam_id: latestExam.exam_id,
-                score: latestExam.score,
-                total: latestExam.total_q,
-                submitted_on: latestExam.end_time,
-                fatal: latestExam.fatal,
+            hasExam: totalCount > 0,
+            data: exams,
+            pagination: {
+                totalItems: totalCount,
+                totalPages,
+                currentPage: page,
+                pageSize: limit,
+                hasNextPage: page < totalPages,
+                hasPrevPage: page > 1,
             },
         });
 
@@ -532,12 +652,13 @@ exports.getAllExamSchedules = async (req, res) => {
             status,
             exam_schedule_id,
             class: studentClass,
-            subject
+            subject,
+            type
         } = req.query;
 
         // ✅ Build filter dynamically
         const where = {};
-
+        if (type === "dropdown") where.status = 1;
         if (status) {
             where.status = Number(status);
         } else {
@@ -556,8 +677,23 @@ exports.getAllExamSchedules = async (req, res) => {
                 skip,
                 take: limit,
                 orderBy: { exam_schedule_id: "desc" },
+
+                ...(type === "dropdown"
+                    ? {
+                        select: {
+                            exam_schedule_id: true,
+                            exam_name: true,
+                            class: true,
+                            subject: true
+                        },
+                    }
+                    : {}),
             }),
-            prisma.exam_schedule.count({ where }),
+
+            type === "dropdown"
+                ? Promise.resolve(0)
+                : prisma.exam_schedule.count({ where }),
+            // prisma.exam_schedule.count({ where }),
         ]);
 
         const totalPages = Math.ceil(totalCount / limit);
@@ -565,14 +701,16 @@ exports.getAllExamSchedules = async (req, res) => {
         return res.status(200).json({
             success: true,
             data: students,
-            pagination: {
-                totalItems: totalCount,
-                totalPages,
-                currentPage: page,
-                pageSize: limit,
-                hasNextPage: page < totalPages,
-                hasPrevPage: page > 1,
-            },
+            ...(type !== "dropdown" && {
+                pagination: {
+                    totalItems: totalCount,
+                    totalPages: Math.ceil(totalCount / limit),
+                    currentPage: page,
+                    pageSize: limit,
+                    hasNextPage: page * limit < totalCount,
+                    hasPrevPage: page > 1,
+                },
+            }),
         });
     } catch (error) {
         console.error("Get Exam Schedule Error:", error);

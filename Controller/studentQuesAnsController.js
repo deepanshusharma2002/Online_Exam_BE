@@ -7,16 +7,19 @@ const prisma = new PrismaClient();
 exports.createQuestion = async (req, res) => {
   try {
     const {
+      exam_schedule_id,
       question,
       option_a,
       option_b,
       option_c,
       option_d,
       ans_option,
+      status,
       created_by
     } = req.body;
 
     if (
+      !exam_schedule_id ||
       !question ||
       !option_a ||
       !option_b ||
@@ -32,12 +35,14 @@ exports.createQuestion = async (req, res) => {
 
     const ques = await prisma.student_ques_ans.create({
       data: {
+        exam_schedule_id: Number(exam_schedule_id),
         question,
         option_a,
         option_b,
         option_c,
         option_d,
         ans_option,
+        status: Number(status) || 1,
         created_by: created_by || null,
       },
     });
@@ -152,12 +157,14 @@ exports.updateQuestion = async (req, res) => {
     const { id } = req.params;
 
     const {
+      exam_schedule_id,
       question,
       option_a,
       option_b,
       option_c,
       option_d,
       ans_option,
+      status,
       updated_by
     } = req.body;
 
@@ -172,12 +179,14 @@ exports.updateQuestion = async (req, res) => {
     const updated = await prisma.student_ques_ans.update({
       where: { student_ques_ans_id: parseInt(id) },
       data: {
+        exam_schedule_id: exam_schedule_id || existingSection?.exam_schedule_id,
         question: question || existingSection?.question,
         option_a: option_a || existingSection?.option_a,
         option_b: option_b || existingSection?.option_b,
         option_c: option_c || existingSection?.option_c,
         option_d: option_d || existingSection?.option_d,
         ans_option: ans_option || existingSection?.ans_option,
+        status: status !== undefined ? Number(status) : existingSection?.status,
         updated_by: updated_by || null,
       },
     });

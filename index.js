@@ -32,6 +32,8 @@ app.use("/api/student", studentRoutes);
 const studentQuesAnsRoutes = require("./Routes/studentQuesAnsRoutes");
 app.use("/api/student/question-answer", studentQuesAnsRoutes);
 
+const planRoutes = require("./Routes/planRoutes");
+app.use("/api/plans", planRoutes);
 
 app.use("/api/user", userRoutes);
 app.use('/api/naukari', naukariRoutes);

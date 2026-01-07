@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "postinstall": "npx prisma generate",
-    "start": "node index.js",
+    "start": "node api.js && node index.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
     "build": "npm run prisma:generate && npm run prisma:migrate"

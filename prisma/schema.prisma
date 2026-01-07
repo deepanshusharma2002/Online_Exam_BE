@@ -211,3 +211,63 @@ enum Gender {
   FEMALE
   OTHER
 }
+
+model Plan {
+  plan_id           Int @id @default(autoincrement())
+  plan_code         String    @db.VarChar(50)
+  plan_name         String    @db.VarChar(150)
+  description       String?   @db.Text
+
+  plan_type         PlanType
+
+  is_duration_value_available Boolean  @default(false)
+  duration_value    Int?
+  duration_unit     DurationUnit?
+
+  price             Decimal   @db.Decimal(10, 2)
+  discount_price    Decimal?  @db.Decimal(10, 2)
+  tax_percentage    Decimal?  @db.Decimal(5, 2)
+
+  features          Json?
+
+  is_trial_available Boolean  @default(false)
+  trial_days        Int?
+
+  status            Int       @default(1)
+
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+  created_by        Int?
+  updated_by        Int?
+
+  @@map("plans")
+}
+
+model PlanInterested {
+  plan_interested_id Int      @id @default(autoincrement())
+  plan_id            Int
+
+  name               String
+  email              String?
+  phone              String
+  message            String?  @db.Text
+
+  created_at         DateTime @default(now())
+
+  @@map("plan_interested")
+}
+
+
+enum PlanType {
+  monthly
+  quarterly
+  half_yearly
+  yearly
+}
+
+enum DurationUnit {
+  days
+  months
+  years
+}
+
